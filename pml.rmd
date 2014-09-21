@@ -1,0 +1,51 @@
+---
+title: "pml_project"
+author: "Sanjeev Singh"
+date: "Saturday, September 20, 2014"
+output: html_document
+---
+
+First we need to open the file containing training data & partition it into training and testing -
+
+```{r}
+library(caret)
+pmlData <- read.csv("pml-training.csv")
+inTrain <- createDataPartition(y=pmlData$classe,p=0.7,list=FALSE)
+training <- pmlData[inTrain,]
+testing <- pmlData[-inTrain,]
+```
+
+Remove the first five columns which are useless :
+
+```{r}
+training <- training[,-c(1,2,3,4,5)]
+testing <- testing[,-c(1,2,3,4,5)]
+```
+Next we need to remove some of the columns which provide very little information to impact the prediction.
+```{r}
+summary(training[,c(7,8,9,10,11)])
+```
+These columns are 7:31 , 45:54 , 64:78 , 82:96 , 98:107, 120:134, 136:145
+```{r}
+testing <- testing[,-c(7:31,45:54,64:78,82:96,98:107,120:134,136:145)]
+training <- training[,-c(7:31,45:54,64:78,82:96,98:107,120:134,136:145)]
+```
+Let us traing a random forest model for classification 
+```{r}
+library(randomForest)
+x <- training[,-55]
+y <- training[,55]
+modRF <- randomForest(x,y=y)
+modRF
+```
+Please note that OOB estimate of error rate 
+now lets test the accuracy on testing data
+```{r eval=FALSE}
+pred <- predict(modRF,testing[,-55])
+```
+```{r}
+result <- pred == testing[,55]
+oob_error <- length(result[result==FALSE]) * 100 / length(result)
+oob_error
+```
+This looks really good, OOB error with test data is consistent with the OOB error estimate. 
